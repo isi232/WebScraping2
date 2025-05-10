@@ -1,0 +1,40 @@
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from bs4 import BeautifulSoup
+from openpyxl import Workbook
+import time
+
+options = webdriver.ChromeOptions()
+options.add_argument('--headless')
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()),options=options)
+
+url1 = 'https://tap.az/elanlar/neqliyyat/avtomobiller?keywords_source=typewritten&order=&q%5Buser_id%5D=&q%5Bcontact_id%5D=&q%5Bprice%5D%5B%5D=&q%5Bprice%5D%5B%5D=&p%5B745%5D=3740&p%5B919%5D=&p%5B824%5D%5B%5D=&p%5B824%5D%5B%5D=&p%5B848%5D=&p%5B847%5D=&p%5B744%5D=&p%5B748%5D%5B%5D=&p%5B748%5D%5B%5D=&p%5B742%5D%5B%5D=&p%5B742%5D%5B%5D=&p%5B738%5D=&q%5Bregion_id%5D=&q%5Bkeywords%5D='
+driver.get(url1)
+time.sleep(5)
+
+soup = BeautifulSoup(driver.page_source,'html.parser')
+driver.quit()
+
+wb = Workbook()
+ws = wb.active
+ws.title = 'Audi'
+ws.append(['title','price','date','link'])
+
+products = soup.find_all('a',class_='products-link')
+for product in products:
+    title_tag = product.find('div',class_='products-name')
+    price_tag = product.find('span',class_='price-val')
+    date_tag = product.find('div',class_='products-created')
+    link = product['href']
+
+    title = title_tag.get_text(strip=True) if title_tag else ''
+    price = price_tag.get_text(strip=True) if price_tag else ''
+    date = date_tag.get_text(strip=True) if date_tag else ''
+    full_link = f"https://tap.az{link}" if link else ''
+    if title:
+        ws.append([title,price,date,link])
+
+wb.save('tap_az_audi_products.xlsx')
+print("Done:tap_az_audi_products.xlsx")
+print(full_link)
